@@ -149,11 +149,21 @@ OOB_ENABLED=false
 [[ -n "${OOB_DOMAIN:-}" ]] && OOB_ENABLED=true && ok "OOB domain: ${OOB_DOMAIN}"
 
 # ─────────────────────────────────────────────
-#  OUTPUT DIR
+#  OUTPUT DIR — tries CWD, then $HOME, then /tmp
 # ─────────────────────────────────────────────
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-LOG_DIR="sqlxploit_${TIMESTAMP}"
-mkdir -p "$LOG_DIR"
+_DIRNAME="sqlxploit_${TIMESTAMP}"
+
+# Pick a writable base directory
+if   mkdir -p "${PWD}/${_DIRNAME}"   2>/dev/null; then BASE_DIR="${PWD}/${_DIRNAME}"
+elif mkdir -p "${HOME}/${_DIRNAME}"  2>/dev/null; then BASE_DIR="${HOME}/${_DIRNAME}"
+elif mkdir -p "/tmp/${_DIRNAME}"     2>/dev/null; then BASE_DIR="/tmp/${_DIRNAME}"
+else
+  echo -e "\033[1;31m[✗]\033[0m Cannot create output directory in CWD, HOME, or /tmp. Exiting."
+  exit 1
+fi
+
+LOG_DIR="$BASE_DIR"
 LOG_FILE="${LOG_DIR}/full_log.txt"
 HITS_FILE="${LOG_DIR}/confirmed.txt"
 INTEL_FILE="${LOG_DIR}/intel.txt"
@@ -165,6 +175,7 @@ PRIV_LOG="${LOG_DIR}/privileges.txt"
 mkdir -p "$DUMP_DIR"
 : > "$LOG_FILE"; : > "$HITS_FILE"; : > "$INTEL_FILE"; : > "$BLOCK_LOG"
 : > "$OOB_LOG";  : > "$UNION_LOG"; : > "$PRIV_LOG"
+echo -e "\033[1;32m[✓]\033[0m Output directory: ${LOG_DIR}"
 
 # ─────────────────────────────────────────────
 #  TIMING
